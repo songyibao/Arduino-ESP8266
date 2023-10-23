@@ -17,17 +17,28 @@ long monitorInterval = 1000;
 
 //==================================== 这是需要配置的项 ===============================
 // Wifi配置
-char *wifiSsid = "MERCURY_11A8";
-char *wifiPwd = "999999999";
+// char *wifiSsid = "MERCURY_11A8";
+// char *wifiPwd = "999999999";
+// char *wifiSsid = "are_you_ok";
+// char *wifiPwd = ".999999999";、
+char *wifiSsid = "iQOO Z8";
+char *wifiPwd = ".Ss13626350673";
+
+//静态地址、网关、子网掩码
+// IPAddress local_IP(10, 202, 222, 121);
+// IPAddress gateway(10, 202, 222, 94);
+// IPAddress subnet(255, 255, 252, 0);
+
+
 
 // 设备信息配置
-String deviceNum = "D1CYN24343G4"; //设备编号
+String deviceNum = "D1CYN24343G4";  //设备编号
 String userId = "1";
-String productId = "43"; // 产品编号
-float firmwareVersion = 1.0; //固件版本
+String productId = "43";      // 产品编号
+float firmwareVersion = 1.0;  //固件版本
 // 经度和纬度可选，如果产品使用设备定位，则必须传
-float latitude=0;
-float longitude=0;
+float latitude = 0;
+float longitude = 0;
 
 // Mqtt配置
 char *mqttHost = "159.75.122.204";
@@ -36,7 +47,7 @@ char *mqttUserName = "wumei-smart";
 char *mqttPwd = "PD2M7ZK9J4079Y4K";
 char mqttSecret[17] = "K1K1AE11H6S3F776";
 // 产品启用授权码，则授权码不能为空
-String authCode="";
+String authCode = "";
 
 // NTP地址（用于获取时间,可选的修改为自己部署项目的地址）
 String ntpServer = "http://wumei.live:8080/iot/tool/ntp?deviceSendTime=";
@@ -61,8 +72,7 @@ String pMonitorTopic = prefix + "/monitor/post";
 String pEventTopic = prefix + "/event/post";
 
 // 物模型-属性处理
-void processProperty(String payload)
-{
+void processProperty(String payload) {
   StaticJsonDocument<1024> doc;
   DeserializationError error = deserializeJson(doc, payload);
   if (error) {
@@ -70,11 +80,10 @@ void processProperty(String payload)
     Serial.println(error.f_str());
     return;
   }
-  for (JsonObject object : doc.as<JsonArray>())
-  {
+  for (JsonObject object : doc.as<JsonArray>()) {
     // 匹配云端定义的属性（不包含属性中的监测数据）
-    const char* id = object["id"];
-    const char* value = object["value"];
+    const char *id = object["id"];
+    const char *value = object["value"];
     printMsg((String)id + "：" + (String)value);
   }
   // 最后发布属性，服务端订阅存储（重要）
@@ -82,8 +91,7 @@ void processProperty(String payload)
 }
 
 // 物模型-功能处理
-void processFunction(String payload)
-{
+void processFunction(String payload) {
   StaticJsonDocument<1024> doc;
   DeserializationError error = deserializeJson(doc, payload);
   if (error) {
@@ -91,28 +99,20 @@ void processFunction(String payload)
     Serial.println(error.f_str());
     return;
   }
-  for (JsonObject object : doc.as<JsonArray>())
-  {
+  for (JsonObject object : doc.as<JsonArray>()) {
     // 匹配云端定义的功能
-    const char* id = object["id"];
-    const char* value = object["value"];
-    if (strcmp(id, "switch") == 0)
-    {
-      printMsg("开关 switch：" + (String) value);
-    }
-    else if (strcmp(id, "gear") == 0)
-    {
+    const char *id = object["id"];
+    const char *value = object["value"];
+    if (strcmp(id, "switch") == 0) {
+      printMsg("开关 switch：" + (String)value);
+    } else if (strcmp(id, "gear") == 0) {
       printMsg("档位 gear：" + (String)value);
-    }
-    else if (strcmp(id, "light_color") == 0)
-    {
+    } else if (strcmp(id, "light_color") == 0) {
       printMsg("灯光颜色 light_color：" + (String)value);
-    }
-    else if (strcmp(id, "message") == 0)
-    {
+    } else if (strcmp(id, "message") == 0) {
       printMsg("屏显消息 message：" + (String)value);
-    }else if(strcmp(id,"report_monitor")==0){
-      String msg=randomPropertyData();
+    } else if (strcmp(id, "report_monitor") == 0) {
+      String msg = randomPropertyData();
       printMsg("订阅到上报监测数据指令，上报数据：");
       printMsg(msg);
       publishProperty(msg);
@@ -123,46 +123,37 @@ void processFunction(String payload)
 }
 
 // Mqtt回调
-void callback(char *topic, byte *payload, unsigned int length)
-{
+void callback(char *topic, byte *payload, unsigned int length) {
   blink();
   printMsg("接收数据：");
   String data = "";
-  for (int i = 0; i < length; i++)
-  {
+  for (int i = 0; i < length; i++) {
     Serial.print((char)payload[i]);
     data += (char)payload[i];
   }
 
-  if (strcmp(topic, sOtaTopic.c_str()) == 0)
-  {
+  if (strcmp(topic, sOtaTopic.c_str()) == 0) {
     printMsg("订阅到设备升级指令...");
     StaticJsonDocument<256> doc;
     DeserializationError error = deserializeJson(doc, payload);
-    if (error)
-    {
+    if (error) {
       Serial.print(F("deserializeJson() failed: "));
       Serial.println(error.f_str());
       return;
     }
     String newVersion = doc["version"];
     String downloadUrl = doc["downloadUrl"];
-    printMsg("固件版本："+newVersion);
-    printMsg("下载地址："+downloadUrl);
-  }
-  else if (strcmp(topic, sInfoTopic.c_str()) == 0)
-  {
+    printMsg("固件版本：" + newVersion);
+    printMsg("下载地址：" + downloadUrl);
+  } else if (strcmp(topic, sInfoTopic.c_str()) == 0) {
     printMsg("订阅到设备信息...");
     // 发布设备信息
     publishInfo();
-  }
-  else if (strcmp(topic, sNtpTopic.c_str()) == 0)
-  {
+  } else if (strcmp(topic, sNtpTopic.c_str()) == 0) {
     printMsg("订阅到NTP时间...");
     StaticJsonDocument<256> doc;
     DeserializationError error = deserializeJson(doc, payload);
-    if (error)
-    {
+    if (error) {
       Serial.print(F("deserializeJson() failed: "));
       Serial.println(error.f_str());
       return;
@@ -174,53 +165,46 @@ void callback(char *topic, byte *payload, unsigned int length)
     float deviceRecvTime = millis();
     float now = (serverSendTime + serverRecvTime + deviceRecvTime - deviceSendTime) / 2;
     printMsg("当前时间：" + String(now, 0));
-  }
-  else if (strcmp(topic, sPropertyTopic.c_str()) == 0 || strcmp(topic, sPropertyOnline.c_str()) == 0)
-  {
+  } else if (strcmp(topic, sPropertyTopic.c_str()) == 0 || strcmp(topic, sPropertyOnline.c_str()) == 0) {
     printMsg("订阅到属性指令...");
     processProperty(data);
-  }
-  else if (strcmp(topic, sFunctionTopic.c_str()) == 0 || strcmp(topic, sFunctionOnline.c_str()) == 0)
-  {
+  } else if (strcmp(topic, sFunctionTopic.c_str()) == 0 || strcmp(topic, sFunctionOnline.c_str()) == 0) {
     printMsg("订阅到功能指令...");
     processFunction(data);
-  }
-  else if (strcmp(topic, sMonitorTopic.c_str()) == 0)
-  {
+  } else if (strcmp(topic, sMonitorTopic.c_str()) == 0) {
     printMsg("订阅到实时监测指令...");
     StaticJsonDocument<128> doc;
     DeserializationError error = deserializeJson(doc, payload);
-    if (error)
-    {
+    if (error) {
       Serial.print(F("deserializeJson() failed: "));
       Serial.println(error.f_str());
       return;
     }
     monitorCount = doc["count"];
     monitorInterval = doc["interval"];
-  }  
+  }
 }
 
 // 连接wifi
-void connectWifi()
-{
+void connectWifi() {
   printMsg("连接 ");
   Serial.print(wifiSsid);
+  // 设置
+  // WiFi.config(local_IP, gateway, subnet);  //设置静态IP
   WiFi.mode(WIFI_STA);
   WiFi.begin(wifiSsid, wifiPwd);
-  while (WiFi.status() != WL_CONNECTED)
-  {
+  while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
-  printMsg("WiFi连接成功");
-  printMsg("IP地址: ");
+
   Serial.print(WiFi.localIP());
+  Serial.print(WiFi.gatewayIP());
+  Serial.print(WiFi.dnsIP());
 }
 
 // 连接mqtt
-void connectMqtt()
-{
+void connectMqtt() {
   printMsg("连接Mqtt服务器...");
   // 生成mqtt认证密码(设备加密认证，密码加密格式为：mqtt密码 & 过期时间 & 授权码，其中授权码为可选)
   String password = generationPwd();
@@ -232,10 +216,9 @@ void connectMqtt()
   mqttClient.setBufferSize(1024);
   mqttClient.setKeepAlive(10);
   //连接 设备mqtt客户端Id格式为：认证类型(E=加密、S=简单) & 设备编号 & 产品ID & 用户ID
-  String clientId = "S&" + deviceNum + "&" + productId +"&" + userId;
+  String clientId = "S&" + deviceNum + "&" + productId + "&" + userId;
   bool connectResult = mqttClient.connect(clientId.c_str(), mqttUserName, encryptPassword.c_str());
-  if (connectResult)
-  {
+  if (connectResult) {
     printMsg("连接成功");
     // 订阅(OTA、NTP、属性、功能、实时监测、信息)
     mqttClient.subscribe(sInfoTopic.c_str(), 1);
@@ -256,31 +239,28 @@ void connectMqtt()
     printMsg("订阅主题：" + sMonitorTopic);
     // 发布设备信息
     publishInfo();
-  }
-  else
-  {
+  } else {
     printMsg("连接失败, rc=");
     Serial.print(mqttClient.state());
   }
 }
 
 // 1.发布设备信息
-void publishInfo()
-{
+void publishInfo() {
   StaticJsonDocument<256> doc;
   doc["rssi"] = WiFi.RSSI();
   doc["firmwareVersion"] = firmwareVersion;
-  doc["status"] = 3; // （1-未激活，2-禁用，3-在线，4-离线）
+  doc["status"] = 3;  // （1-未激活，2-禁用，3-在线，4-离线）
   doc["userId"] = (String)userId;
   doc["longitude"] = longitude;  //经度 可选
   doc["latitude"] = latitude;    // 纬度 可选
   // 设备摘要,可选（自定义配置信息）
   JsonObject summary = doc.createNestedObject("summary");
-  summary["name"]="monitor1";
-  summary["chip"]="esp8266";
-  summary["author"]="kerwincui";
-  summary["version"]=1.6;
-  summary["create"]="2023-10-20";
+  summary["name"] = "monitor1";
+  summary["chip"] = "esp8266";
+  summary["author"] = "kerwincui";
+  summary["version"] = 1.6;
+  summary["create"] = "2023-10-20";
 
   printMsg("发布设备信息:");
   serializeJson(doc, Serial);
@@ -290,8 +270,7 @@ void publishInfo()
 }
 
 // 2.发布时钟同步信，用于获取当前时间(可选)
-void publishNtp()
-{
+void publishNtp() {
   StaticJsonDocument<128> doc;
   doc["deviceSendTime"] = millis();
 
@@ -303,22 +282,19 @@ void publishNtp()
 }
 
 // 3.发布属性
-void publishProperty(String msg)
-{
+void publishProperty(String msg) {
   printMsg("发布属性:" + msg);
   mqttClient.publish(pPropertyTopic.c_str(), msg.c_str());
 }
 
 // 4.发布功能
-void publishFunction(String msg)
-{
+void publishFunction(String msg) {
   printMsg("发布功能:" + msg);
   mqttClient.publish(pFunctionTopic.c_str(), msg.c_str());
 }
 
 // 5.发布事件
-void publishEvent()
-{
+void publishEvent() {
   // 匹配云端的事件
   StaticJsonDocument<512> doc;
   JsonObject objTmeperature = doc.createNestedObject();
@@ -339,30 +315,29 @@ void publishEvent()
 }
 
 // 6.发布实时监测数据
-void publishMonitor()
-{
-  String msg=randomPropertyData();
+void publishMonitor(String msg) {
   // 发布为实时监测数据，不会存储
-
-  printMsg("发布实时监测数据:"+msg);
+  
+  mqttClient.publish(pMonitorTopic.c_str(), msg.c_str());
+  printMsg("发布实时监测数据:" + msg);
 }
 
 // 随机生成监测值
-String randomPropertyData(){
+String randomPropertyData() {
   // 匹配云端定义的监测数据，随机数代替监测结果
   float randFloat = 0;
-  int randInt=0;
+  int randInt = 0;
   StaticJsonDocument<1024> doc;
   JsonObject objTmeperature = doc.createNestedObject();
   objTmeperature["id"] = "temperature";
-  randFloat = random(1000, 3000) ;
-  objTmeperature["value"] = (String)(randFloat/100);
+  randFloat = random(1000, 3000);
+  objTmeperature["value"] = (String)(randFloat / 100);
   objTmeperature["remark"] = (String)millis();
 
-  JsonObject objHumidity   = doc.createNestedObject();
+  JsonObject objHumidity = doc.createNestedObject();
   objHumidity["id"] = "humidity";
   randFloat = random(3000, 6000);
-  objHumidity["value"] = (String)(randFloat/100);
+  objHumidity["value"] = (String)(randFloat / 100);
   objHumidity["remark"] = (String)millis();
 
   JsonObject objCo2 = doc.createNestedObject();
@@ -385,15 +360,13 @@ String randomPropertyData(){
 }
 
 // 生成密码
-String generationPwd()
-{
+String generationPwd() {
   String jsonTime = getTime();
   // 128字节内存池容量
   StaticJsonDocument<128> doc;
   // 解析JSON
   DeserializationError error = deserializeJson(doc, jsonTime);
-  if (error)
-  {
+  if (error) {
     printMsg("Json解析失败：");
     Serial.print(error.f_str());
     return "";
@@ -407,45 +380,39 @@ String generationPwd()
   // 过期时间 = 当前时间 + 1小时
   float expireTime = now + 1 * 60 * 60 * 1000;
   // 密码加密格式为：mqtt密码 & 过期时间 & 授权码（可选），如果产品启用了授权码就必须加上
-  String password="";
-  if(authCode==""){
+  String password = "";
+  if (authCode == "") {
     password = (String)mqttPwd + "&" + String(expireTime, 0);
-  }else{
-    password = (String)mqttPwd + "&" + String(expireTime, 0)+ "&" + authCode;
+  } else {
+    password = (String)mqttPwd + "&" + String(expireTime, 0) + "&" + authCode;
   }
   printMsg("密码(未加密):" + password);
   return password;
 }
 
 //  HTTP获取时间
-String getTime()
-{
-  while (WiFi.status() == WL_CONNECTED)
-  {
+String getTime() {
+  while (WiFi.status() == WL_CONNECTED) {
     HTTPClient http;
     printMsg("获取时间...");
-    if (http.begin(wifiClient, (ntpServer + (String)millis()).c_str()))
-    {
+    if (http.begin(wifiClient, (ntpServer + (String)millis()).c_str())) {
       // 发送请求
       int httpCode = http.GET();
-      if (httpCode > 0)
-      {
-        if (httpCode == HTTP_CODE_OK || httpCode == HTTP_CODE_MOVED_PERMANENTLY)
-        {
+      if (httpCode > 0) {
+        if (httpCode == HTTP_CODE_OK || httpCode == HTTP_CODE_MOVED_PERMANENTLY) {
           printMsg("获取时间成功，data:");
           Serial.print(http.getString());
           return http.getString();
         }
-      }
-      else
-      {
+      } else {
         printMsg("获取时间失败，error:");
+        Serial.print(WiFi.localIP());
+        Serial.print(WiFi.gatewayIP());
+        Serial.print(WiFi.dnsIP());
         Serial.printf(http.errorToString(httpCode).c_str());
       }
       http.end();
-    }
-    else
-    {
+    } else {
       printMsg("连接Http失败");
     }
     delay(500);
@@ -454,8 +421,7 @@ String getTime()
 }
 
 //打印提示信息
-void printMsg(String msg)
-{
+void printMsg(String msg) {
   Serial.print("\r\n[");
   Serial.print(millis());
   Serial.print("ms]");
@@ -463,8 +429,7 @@ void printMsg(String msg)
 }
 
 // 控制指示灯闪烁
-void blink()
-{
+void blink() {
   printMsg("指示灯闪烁...");
   // pinMode(15, OUTPUT);
   // for (int i = 0; i < 2; i++)
@@ -477,8 +442,7 @@ void blink()
 }
 
 // 加密 (AES-CBC-128-pkcs5padding)
-String encrypt(String plain_data, char *wumei_key, char *wumei_iv)
-{
+String encrypt(String plain_data, char *wumei_key, char *wumei_iv) {
   int i;
   // pkcs7padding填充 Block Size : 16
   int len = plain_data.length();
@@ -486,8 +450,7 @@ String encrypt(String plain_data, char *wumei_key, char *wumei_iv)
   uint8_t n_padding = n_blocks * 16 - len;
   uint8_t data[n_blocks * 16];
   memcpy(data, plain_data.c_str(), len);
-  for (i = len; i < n_blocks * 16; i++)
-  {
+  for (i = len; i < n_blocks * 16; i++) {
     data[i] = n_padding;
   }
   uint8_t key[16], iv[16];
@@ -505,8 +468,7 @@ String encrypt(String plain_data, char *wumei_key, char *wumei_iv)
 }
 
 // 解密 (AES-CBC-128-pkcs5padding)
-String decrypt(String encoded_data_str, char *wumei_key, char *wumei_iv)
-{
+String decrypt(String encoded_data_str, char *wumei_key, char *wumei_iv) {
   int input_len = encoded_data_str.length();
   char *encoded_data = const_cast<char *>(encoded_data_str.c_str());
   int len = base64_dec_len(encoded_data, input_len);

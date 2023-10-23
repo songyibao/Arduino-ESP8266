@@ -8,13 +8,14 @@
  
 #ifndef _HELPER_H
 #define _HELPER_H
-
+// #include "DHT.h"
 #include "Base64.h"
 #include <ESP8266WiFi.h>
 // #include <Ethernet.h>
 #include <ESP8266HTTPClient.h>
 #include <PubSubClient.h>      // 版本2.8.0
 #include <ArduinoJson.h>       // 版本6.19.1
+
 
 extern WiFiClient wifiClient;
 extern PubSubClient mqttClient;
@@ -36,13 +37,15 @@ extern String ntpServer;       // NTP服务地址，用于获取当前时间
 extern int monitorCount;       // 发布监测数据的最大次数
 extern long monitorInterval;   // 发布监测数据的间隔，默认1000毫秒
 
+//初始化dht模块
+void initDHT();
 // 连接wifi
 void connectWifi();
 // 连接mqtt
 void connectMqtt();
 // Mqtt回调
 void callback(char *topic, byte *payload, unsigned int length);
-
+String getTemhumData();
 // 发布设备信息
 void publishInfo();
 // 发布时钟同步信息
@@ -50,7 +53,7 @@ void publishNtp();
 // 发布事件
 void publishEvent();
 // 发布实时监测数据
-void publishMonitor();
+void publishMonitor(String msg);
 // 随机生成监测值
 String randomPropertyData();
 

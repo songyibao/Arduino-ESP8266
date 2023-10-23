@@ -11,7 +11,12 @@
 long lastMqttConn;          // 上次mqtt连接时间
 long lastPublishMonitor;    // 上次发布监测数据时间
 long lastTimerMonitor;      // 上次定时发布监测数据
+// DHT dht;
 DHT dht;
+//初始化dht模块
+void initDHT(){
+  dht.setup(14);
+}
 // 获取温湿度值
 String getTemhumData(){
   StaticJsonDocument<1024> doc;
@@ -41,7 +46,7 @@ void setup()
   printMsg("wumei smart device starting...");
   connectWifi();
   connectMqtt();
-  dht.setup(14);
+  initDHT();
 }
 
 /**
@@ -80,14 +85,15 @@ void loop()
       {
         lastPublishMonitor = now;
         monitorCount--;
-        publishMonitor();
+        String msg = getTemhumData();
+        publishMonitor(msg);
       }
   }
 
-  // 非阻塞定时上报，测试用，60秒发布一次
+  // 非阻塞定时上报，测试用，30秒发布一次
   if(WiFi.status() == WL_CONNECTED){
     long now = millis();
-    if (now - lastTimerMonitor > 60000)
+    if (now - lastTimerMonitor > 30000)
       {
         lastTimerMonitor = now;
         printMsg("执行定时上报");
